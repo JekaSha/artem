@@ -97,7 +97,7 @@
         }
         h2 { margin-top: 0; font-size: 22px; }
         label { display: block; margin-bottom: 20px; }
-        input {
+        input, select {
             display: block;
             width: 100%;
             margin-top: 8px;
@@ -154,16 +154,20 @@
 </head>
 <body>
     <nav class="menu" aria-label="Главное меню">
-        <a href="/lessons" {% if request.path in ['/lessons', '/lessons/4', '/lessons/5'] %}aria-current="page"{% endif %}>Уроки</a>
+        <a href="/lessons" {% if request.path in ['/lessons', '/lessons/5'] %}aria-current="page"{% endif %}>Уроки</a>
         <a href="/lessons/1" {% if request.path in ['/', '/lessons/1'] %}aria-current="page"{% endif %}>Урок 1</a>
         <a href="/lessons/2" {% if request.path == '/lessons/2' %}aria-current="page"{% endif %}>Урок 2</a>
         <a href="/lessons/3" {% if request.path == '/lessons/3' %}aria-current="page"{% endif %}>Урок 3</a>
+        <a href="/lessons/4" {% if request.path == '/lessons/4' %}aria-current="page"{% endif %}>Урок 4</a>
         <a href="/sql" {% if request.path == '/sql' %}aria-current="page"{% endif %}>SQL</a>
     </nav>
 
     {% block content %}
     <p class="hint">Урок {{ lesson_number }} из 5</p>
-    {% if lesson_number == 3 %}
+    {% if lesson_number == 4 %}
+    <h1>Урок 4. Профиль и SQL-инъекция через about</h1>
+    <p class="hint">Выбираешь пользователя → меняешь описание about → видишь обновлённую карточку. В поле описания можно встроить INSERT и добавить ещё один профиль.</p>
+    {% elif lesson_number == 3 %}
     <h1>Урок 3. SQL-инъекция с INSERT</h1>
     <p class="hint">В поле поиска можно дописать SQL-команду INSERT и добавить пользователя. Это пример того, как введённый текст меняет смысл команды.</p>
     {% elif lesson_number == 2 %}

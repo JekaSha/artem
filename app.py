@@ -14,6 +14,7 @@ SOURCE_FILES = {
     1: {"python": "handlers/lesson1.py", "vue": "static/lesson1.js"},
     2: {"python": "handlers/lesson2.py", "vue": "static/lesson2.js"},
     3: {"python": "handlers/lesson3.py", "vue": "static/lesson3.js"},
+    4: {"python": "handlers/lesson4.py", "vue": "static/lesson4.js"},
 }
 
 # База — это файл users.db рядом с этим скриптом.
@@ -68,6 +69,12 @@ def injection_lesson():
     return render_template("index.html", lesson_number=3, version=version)
 
 
+@app.get("/lessons/4")
+def about_lesson():
+    version = (PROJECT / SOURCE_FILES[4]["vue"]).stat().st_mtime_ns
+    return render_template("index.html", lesson_number=4, version=version)
+
+
 @app.get("/lessons")
 def lessons():
     return render_template("lessons.html")
@@ -75,7 +82,7 @@ def lessons():
 
 @app.get("/lessons/<int:number>")
 def lesson(number):
-    if number < 4 or number > 5:
+    if number != 5:
         abort(404)
     return render_template("lesson.html", number=number)
 
@@ -139,6 +146,11 @@ def search_users():
 @app.post("/injection")
 def injection():
     return call_handler(3)
+
+
+@app.route("/profile", methods=["GET", "POST"])
+def profile():
+    return call_handler(4)
 
 
 def call_handler(lesson_number):

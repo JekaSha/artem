@@ -20,7 +20,12 @@
         <p class="hint">Добавление пользователя через поле поиска: кавычка, точка с запятой и INSERT.</p>
         <p>Открыть урок →</p>
     </a>
-    {% for number in range(4, 6) %}
+    <a class="lesson-card" href="/lessons/4">
+        <h2>Урок 4. Изменение about</h2>
+        <p class="hint">Карточка профиля, обновление описания и INSERT через поле about.</p>
+        <p>Открыть урок →</p>
+    </a>
+    {% for number in range(5, 6) %}
     <a class="lesson-card" href="/lessons/{{ number }}">
         <h2>Урок {{ number }}</h2>
         <p class="hint">Содержание пока не добавлено.</p>
