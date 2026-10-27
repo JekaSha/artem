@@ -23,7 +23,7 @@ Vue.createApp({
             <h3 v-text="user.name"></h3>
             <p>Логин: <b v-text="user.login"></b></p>
             <p><b>О пользователе:</b></p>
-            <p class="about" v-text="user.about || 'Описание пока не добавлено.'"></p>
+            <div class="about" v-html="user.about || 'Описание пока не добавлено.'"></div>
         </div>
     `,
     data() {

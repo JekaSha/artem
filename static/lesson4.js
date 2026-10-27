@@ -11,7 +11,7 @@ Vue.createApp({
             <h3 v-text="profile.name"></h3>
             <p>Логин: <b v-text="profile.login"></b></p>
             <p><b>О пользователе — about:</b></p>
-            <p class="about" v-text="profile.about || 'Описание пока не заполнено.'"></p>
+            <div class="about" v-html="profile.about || 'Описание пока не заполнено.'"></div>
         </article>
         <p v-else class="hint">Профилей пока нет. Добавь пользователя в разделе SQL.</p>
 
@@ -37,7 +37,7 @@ Vue.createApp({
             <article v-for="user in createdProfiles" :key="user.login" class="profile">
                 <h3 v-text="user.name"></h3>
                 <p>Логин: <b v-text="user.login"></b></p>
-                <p class="about" v-text="user.about"></p>
+                <div class="about" v-html="user.about"></div>
                 <button type="button" @click="openProfile(user.login)">Открыть этот профиль</button>
             </article>
         </div>
