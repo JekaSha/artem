@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Урок {{ lesson_number|default(1) }} — Python и Vue{% endblock %}</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/static/highlight-github-dark.min.css">
+    <link rel="stylesheet" href="/static/codemirror/codemirror.min.css">
+    <link rel="stylesheet" href="/static/codemirror/material-darker.min.css">
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 32px;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #202b38;
+        }
+        h1 { margin-top: 0; }
+        .menu {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 28px;
+            padding: 12px 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: #f4f6f8;
+            border-bottom: 1px solid #dce2e8;
+        }
+        .menu a, .refresh {
+            display: inline-block;
+            padding: 10px 20px;
+            color: #202b38;
+            text-decoration: none;
+            border: 1px solid #dce2e8;
+            border-radius: 6px;
+            background: white;
+        }
+        .menu a[aria-current="page"] { color: white; background: #2863d6; border-color: #2863d6; }
+        .table-scroll { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+        th, td {
+            padding: 14px 18px;
+            border: 1px solid #dce2e8;
+            text-align: left;
+            white-space: pre-wrap;
+        }
+        th { background: #edf2f7; font-family: monospace; }
+        td { font-family: monospace; font-size: 16px; }
+        caption { text-align: left; margin-bottom: 12px; color: #536274; }
+        details { margin-top: 24px; }
+        summary { cursor: pointer; }
+        textarea {
+            display: block;
+            width: 100%;
+            min-height: 120px;
+            margin: 12px 0 16px;
+            padding: 16px;
+            font: 16px/1.6 monospace;
+            border: 1px solid #b5bfca;
+            border-radius: 6px;
+            resize: vertical;
+        }
+        .actions, .lesson-navigation { display: flex; flex-wrap: wrap; gap: 12px; }
+        .lesson-navigation { margin-top: 24px; }
+        .lesson-list, .help-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+        .lesson-card {
+            display: block;
+            padding: 24px;
+            color: inherit;
+            text-decoration: none;
+            background: white;
+            border: 1px solid #dce2e8;
+            border-radius: 12px;
+        }
+        .lesson-card:hover { border-color: #2863d6; }
+        .lesson-card p:last-child { margin-bottom: 0; }
+        .help { margin-top: 32px; }
+        .help-grid article { min-width: 0; }
+        .help pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .help code { font-size: 14px; }
+        .columns {
+            display: grid;
+            grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr);
+            gap: 24px;
+            align-items: start;
+        }
+        section {
+            min-width: 0;
+            padding: 24px;
+            background: white;
+            border: 1px solid #dce2e8;
+            border-radius: 12px;
+        }
+        h2 { margin-top: 0; font-size: 22px; }
+        label { display: block; margin-bottom: 20px; }
+        input {
+            display: block;
+            width: 100%;
+            margin-top: 8px;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #b5bfca;
+            border-radius: 6px;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            color: white;
+            background: #2863d6;
+            border: 0;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        button:disabled { opacity: 0.6; cursor: wait; }
+        .hint { color: #536274; line-height: 1.6; }
+        .result { min-height: 24px; font-weight: bold; line-height: 1.6; }
+        pre {
+            margin-bottom: 0;
+            padding: 20px;
+            overflow-x: auto;
+            background: #16202d;
+            color: #e4edf7;
+            border-radius: 8px;
+            font-size: 14px;
+            line-height: 1.6;
+            tab-size: 4;
+        }
+        .sql-query { white-space: pre-wrap; overflow-wrap: anywhere; }
+        .sql-query a { color: #8fc8ff; text-decoration: underline; }
+        .profile { padding: 16px; border: 1px solid #dce2e8; border-radius: 8px; background: #f4f6f8; }
+        .profile h3 { margin-top: 0; }
+        .about { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.6; }
+        .code-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+        .code-tabs button { background: #edf2f7; color: #202b38; }
+        .code-tabs button[aria-pressed="true"] { background: #2863d6; color: white; }
+        .source-path { font: 13px/1.6 monospace; overflow-wrap: anywhere; color: #536274; }
+        .editor-label { margin-bottom: 8px; font-size: 14px; }
+        .CodeMirror { width: 100%; max-width: 100%; height: 640px; border-radius: 8px; font: 14px/1.6 monospace; }
+        .CodeMirror textarea { min-height: 0; margin: 0; padding: 0; }
+        .editor-actions { margin-top: 16px; }
+        .editor-status { padding: 12px; min-height: 44px; white-space: pre-wrap; overflow-wrap: anywhere; color: #1f6547; background: #eef8f2; font: 14px/1.6 monospace; }
+        .editor-status.has-error { background: #fff0ef; color: #a62b2b; }
+        .syntax-error-line { background: #743737; }
+        @media (max-width: 800px) {
+            body { padding: 16px; }
+            .columns { grid-template-columns: 1fr; }
+            .lesson-list, .help-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="menu" aria-label="Главное меню">
+        <a href="/lessons" {% if request.path in ['/lessons', '/lessons/4', '/lessons/5'] %}aria-current="page"{% endif %}>Уроки</a>
+        <a href="/lessons/1" {% if request.path in ['/', '/lessons/1'] %}aria-current="page"{% endif %}>Урок 1</a>
+        <a href="/lessons/2" {% if request.path == '/lessons/2' %}aria-current="page"{% endif %}>Урок 2</a>
+        <a href="/lessons/3" {% if request.path == '/lessons/3' %}aria-current="page"{% endif %}>Урок 3</a>
+        <a href="/sql" {% if request.path == '/sql' %}aria-current="page"{% endif %}>SQL</a>
+    </nav>
+
+    {% block content %}
+    <p class="hint">Урок {{ lesson_number }} из 5</p>
+    {% if lesson_number == 3 %}
+    <h1>Урок 3. SQL-инъекция с INSERT</h1>
+    <p class="hint">В поле поиска можно дописать SQL-команду INSERT и добавить пользователя. Это пример того, как введённый текст меняет смысл команды.</p>
+    {% elif lesson_number == 2 %}
+    <h1>Урок 2. Поиск пользователей</h1>
+    <p class="hint">Вводишь часть логина → видишь SQL-запрос → получаешь имя и описание найденного пользователя.</p>
+    <p class="hint">LIKE ищет похожий текст. Запись '%art%' означает: «логин содержит art». Поле about — описание пользователя.</p>
+    {% else %}
+    <h1>Урок 1. Как работает вход в профиль</h1>
+    <p class="hint">Вводишь данные → Python ищет пользователя в базе → видишь имя, логин и описание.</p>
+    {% endif %}
+
+    <main class="columns">
+        <section id="lesson-app"></section>
+        {% include "editor.html" %}
+    </main>
+    <div class="lesson-navigation">
+        <a class="refresh" href="/lessons">Все 5 уроков</a>
+        {% if lesson_number > 1 %}
+        <a class="refresh" href="/lessons/{{ lesson_number - 1 }}">← Урок {{ lesson_number - 1 }}</a>
+        {% endif %}
+        <a class="refresh" href="/lessons/{{ lesson_number + 1 }}">Урок {{ lesson_number + 1 }} →</a>
+    </div>
+    {% endblock %}
+
+    {% block scripts %}
+    <script src="/static/vue.global.prod.js"></script>
+    <script src="/static/highlight.min.js"></script>
+    <script src="/static/codemirror/codemirror.min.js"></script>
+    <script src="/static/codemirror/python.min.js"></script>
+    <script src="/static/codemirror/javascript.min.js"></script>
+    <script src="/static/lesson{{ lesson_number }}.js?v={{ version }}"></script>
+    <script src="/static/editor.js"></script>
+    {% endblock %}
+</body>
+</html>

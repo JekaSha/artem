@@ -1,0 +1,16 @@
+<section id="code-editor" data-lesson="{{ lesson_number }}">
+    <h2>Код урока</h2>
+    <div class="code-tabs" aria-label="Выбор кода">
+        <button type="button" :aria-pressed="language === 'python'" :disabled="busy" @click="switchLanguage('python')">Бэкенд — Python</button>
+        <button type="button" :aria-pressed="language === 'vue'" :disabled="busy" @click="switchLanguage('vue')">Vue</button>
+    </div>
+    <p class="source-path"><span v-text="filePath"></span><span v-if="dirty"> · Есть несохранённые изменения</span></p>
+    <label for="source-code" class="editor-label">Редактор кода</label>
+    <textarea id="source-code" ref="source" spellcheck="false"></textarea>
+    <div class="actions editor-actions">
+        <button type="button" :disabled="busy" @click="check">Проверить синтаксис</button>
+        <button type="button" :disabled="busy" @click="save">Сохранить</button>
+    </div>
+    <pre class="editor-status" :class="{ 'has-error': hasError }" role="status" v-text="status"></pre>
+    <p class="hint">Пиши прямо в редакторе. «Сохранить» проверяет код и записывает настоящий файл. Python применяется к следующему запросу; после сохранения Vue страница обновляется.</p>
+</section>

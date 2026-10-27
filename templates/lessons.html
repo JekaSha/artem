@@ -1,0 +1,32 @@
+{% extends "index.html" %}
+{% block title %}Уроки — Python и SQL{% endblock %}
+
+{% block content %}
+<h1>Уроки Python и SQL</h1>
+<p class="hint">Всего будет 5 уроков. Начни с первого: форма отправляет данные в Python, а Python ищет пользователя в базе.</p>
+<main class="lesson-list">
+    <a class="lesson-card" href="/lessons/1">
+        <h2>Урок 1. Вход в профиль</h2>
+        <p class="hint">Форма на Vue, логин, пароль и запрос к базе данных.</p>
+        <p>Открыть урок →</p>
+    </a>
+    <a class="lesson-card" href="/lessons/2">
+        <h2>Урок 2. Поиск пользователей</h2>
+        <p class="hint">Поиск по части логина, SQL-запрос и описание about.</p>
+        <p>Открыть урок →</p>
+    </a>
+    <a class="lesson-card" href="/lessons/3">
+        <h2>Урок 3. SQL-инъекция с INSERT</h2>
+        <p class="hint">Добавление пользователя через поле поиска: кавычка, точка с запятой и INSERT.</p>
+        <p>Открыть урок →</p>
+    </a>
+    {% for number in range(4, 6) %}
+    <a class="lesson-card" href="/lessons/{{ number }}">
+        <h2>Урок {{ number }}</h2>
+        <p class="hint">Содержание пока не добавлено.</p>
+        <p>Открыть страницу →</p>
+    </a>
+    {% endfor %}
+</main>
+{% endblock %}
+{% block scripts %}{% endblock %}

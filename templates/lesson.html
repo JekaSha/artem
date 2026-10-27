@@ -1,0 +1,19 @@
+{% extends "index.html" %}
+{% block title %}Урок {{ number }}{% endblock %}
+
+{% block content %}
+<p class="hint">Урок {{ number }} из 5</p>
+<h1>Урок {{ number }}</h1>
+<section>
+    <h2>Скоро здесь будет новый урок</h2>
+    <p class="hint">Содержание этого урока пока не добавлено.</p>
+    <a class="refresh" href="/lessons">Все уроки</a>
+</section>
+<div class="lesson-navigation">
+    <a class="refresh" href="/lessons/{{ number - 1 }}">← Урок {{ number - 1 }}</a>
+    {% if number < 5 %}
+    <a class="refresh" href="/lessons/{{ number + 1 }}">Урок {{ number + 1 }} →</a>
+    {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "index.html" %}
+
+{% block title %}SQL — запросы к базе данных{% endblock %}
+
+{% block content %}
+<h1>SQL — говорим с базой данных</h1>
+<p class="hint">База — как тетрадь с таблицами. SQL — команды, с помощью которых мы читаем и меняем записи.</p>
+
+<main>
+    <section id="sql-app">
+        <h2>Попробуй свой запрос</h2>
+        <p class="hint">Пиши один запрос за раз. Добавление и удаление сразу сохраняются в настоящей базе users.db.</p>
+        <form @submit.prevent="runQuery">
+            <label for="query">SQL-запрос</label>
+            <textarea id="query" name="query" v-model="query" spellcheck="false" required></textarea>
+            <div class="actions">
+                <button type="submit" :disabled="running">
+                    <span v-text="running ? 'Выполняем…' : 'Выполнить'"></span>
+                </button>
+                <button type="button" :disabled="running" @click="showUsers">Показать таблицу users</button>
+            </div>
+        </form>
+
+        <p class="result" aria-live="polite" v-text="message"></p>
+        <h3>Результат запроса</h3>
+        <div class="table-scroll" v-if="columns.length">
+            <table>
+                <caption>Строк в результате: <span v-text="rows.length"></span></caption>
+                <thead>
+                    <tr><th v-for="(column, index) in columns" :key="index" scope="col" v-text="column"></th></tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(row, rowIndex) in rows" :key="rowIndex">
+                        <td v-for="(value, index) in row" :key="index" v-text="value === null ? 'NULL' : value"></td>
+                    </tr>
+                    <tr v-if="rows.length === 0"><td :colspan="columns.length">Ничего не найдено.</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <p class="hint" v-else>У этого запроса нет таблицы с результатом.</p>
+    </section>
+
+    <section class="help">
+        <h2>Шпаргалка: четыре команды</h2>
+        <p class="hint">Скопируй пример в поле сверху и нажми «Выполнить».</p>
+        <div class="help-grid">
+            <article>
+                <h3>Получать — SELECT</h3>
+                <p class="hint">«Покажи всех пользователей». Звёздочка означает «все столбцы».</p>
+                <pre><code class="language-sql">SELECT * FROM users;</code></pre>
+            </article>
+            <article>
+                <h3>Добавлять — INSERT</h3>
+                <p class="hint">«Добавь Машу». В скобках — названия столбцов, после VALUES — что в них записать. Логин должен быть новым.</p>
+                <pre><code class="language-sql">INSERT INTO users (login, password, name, about)
+VALUES ('masha', '1234', 'Маша', 'Люблю рисовать.');</code></pre>
+            </article>
+            <article>
+                <h3>Удалять — DELETE</h3>
+                <p class="hint">«Удали пользователя с логином masha». WHERE значит «только тех, у кого…». Без WHERE удалятся все пользователи.</p>
+                <pre><code class="language-sql">DELETE FROM users
+WHERE login = 'masha';</code></pre>
+            </article>
+            <article>
+                <h3>Считать — COUNT</h3>
+                <p class="hint">«Сколько всего пользователей?» COUNT(*) считает строки, а AS total даёт имя столбцу с ответом.</p>
+                <pre><code class="language-sql">SELECT COUNT(*) AS total FROM users;</code></pre>
+            </article>
+        </div>
+        <p class="hint">Текст пишем в одинарных кавычках: 'Маша'. Команду можно закончить точкой с запятой: ;</p>
+        <details>
+            <summary>Структура таблицы users в базе</summary>
+            <pre><code class="language-sql">{{ schema }}</code></pre>
+        </details>
+    </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/vue.global.prod.js"></script>
+<script src="/static/highlight.min.js"></script>
+<script>
+    hljs.highlightAll();
+
+    Vue.createApp({
+        data() {
+            return {
+                query: {{ query|tojson }},
+                columns: {{ columns|tojson }},
+                rows: {{ rows|tojson }},
+                message: {{ message|tojson }},
+                running: false
+            };
+        },
+        methods: {
+            async runQuery() {
+                this.running = true;
+                this.message = '';
+                try {
+                    const response = await fetch('/sql/query', {
+                        method: 'POST',
+                        body: new URLSearchParams({ query: this.query })
+                    });
+                    if (!response.ok) throw new Error('Ошибка сервера');
+                    const result = await response.json();
+                    this.columns = result.columns;
+                    this.rows = result.rows;
+                    this.message = result.message;
+                } catch {
+                    this.columns = [];
+                    this.rows = [];
+                    this.message = 'Нет ответа от Python. Проверь, запущена ли программа.';
+                } finally {
+                    this.running = false;
+                }
+            },
+            showUsers() {
+                this.query = 'SELECT * FROM users';
+                this.runQuery();
+            }
+        }
+    }).mount('#sql-app');
+</script>
+{% endblock %}
