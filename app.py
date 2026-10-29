@@ -16,7 +16,30 @@ SOURCE_FILES = {
     3: {"python": "handlers/lesson3.py", "vue": "static/lesson3.js"},
     4: {"python": "handlers/lesson4.py", "vue": "static/lesson4.js"},
     5: {"python": "handlers/lesson5.py", "vue": "static/lesson5.js"},
+    6: {"python": "handlers/lesson6.py", "vue": "static/lesson6.js"},
+    7: {"python": "handlers/lesson7.py", "vue": "static/lesson7.js"},
+    8: {"python": "handlers/lesson8.py", "vue": "static/lesson8.js"},
+    9: {"python": "handlers/lesson9.py", "vue": "static/lesson9.js"},
 }
+
+# Заголовок и короткое описание каждого урока.
+LESSONS = {
+    1: ("Урок 1. Как работает вход в профиль", "Вводишь данные → Python ищет пользователя в базе → видишь имя, логин и описание."),
+    2: ("Урок 2. Поиск пользователей", "Вводишь часть логина → видишь SQL-запрос → получаешь имя и описание. LIKE '%art%' значит «логин содержит art»."),
+    3: ("Урок 3. SQL-инъекция с INSERT", "В поле поиска можно дописать SQL-команду INSERT и добавить пользователя."),
+    4: ("Урок 4. Профиль и SQL-инъекция через about", "Меняешь описание about → видишь карточку. В поле about можно встроить INSERT и добавить ещё один профиль."),
+    5: ("Урок 5. Загрузка файлов на сервер", "Отправляешь файлы в Python → видишь их под формой. Загруженный .py можно выполнить на сервере."),
+    6: ("Урок 6. Куки: как сайт помнит вход", "Входишь → сайт кладёт логин в куку. Куку можно подделать и войти чужим без пароля."),
+    7: ("Урок 7. Гостевая книга и XSS", "Оставляешь сообщение → его видят все. Через v-html чужой HTML и скрипт выполнятся у каждого."),
+    8: ("Урок 8. Пароли: открытый текст и хеш", "Смотрим пароли в базе и их хеши. Почему хранить 1234 открыто — плохо."),
+    9: ("Урок 9. Что браузер шлёт на сервер", "Каждый запрос несёт заголовки: какой браузер, какой язык, какие куки. Их видит сервер."),
+}
+
+
+# total — сколько всего уроков. Нужно в меню и навигации на всех страницах.
+@app.context_processor
+def inject_total():
+    return {"total": len(LESSONS)}
 
 # База — это файл users.db рядом с этим скриптом.
 with sqlite3.connect(DATABASE) as database:
@@ -50,6 +73,9 @@ with sqlite3.connect(DATABASE) as database:
         ],
     )
 
+    # Гостевая книга урока 7: одна строка — одно сообщение.
+    database.execute("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, text TEXT NOT NULL)")
+
     # Таблица результатов игр. login показывает, чей это результат.
     database.execute("""
         CREATE TABLE IF NOT EXISTS scores (
@@ -77,13 +103,14 @@ with sqlite3.connect(DATABASE) as database:
 @app.get("/")
 @app.get("/lessons/<int:number>")
 def lesson(number=1):
+    title, hint = LESSONS[number]
     version = (PROJECT / SOURCE_FILES[number]["vue"]).stat().st_mtime_ns
-    return render_template("index.html", lesson_number=number, version=version)
+    return render_template("index.html", lesson_number=number, version=version, title=title, hint=hint)
 
 
 @app.get("/lessons")
 def lessons():
-    return render_template("lessons.html")
+    return render_template("lessons.html", cards=LESSONS)
 
 
 def run_sql(query):
@@ -141,6 +168,11 @@ def profile():
 @app.route("/files", methods=["GET", "POST"])
 def files():
     return call_handler(5)
+
+
+@app.route("/run/<int:number>", methods=["GET", "POST"])
+def run_lesson(number):
+    return call_handler(number)
 
 
 @app.get("/uploads/<filename>")

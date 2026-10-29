@@ -159,44 +159,27 @@
 <body>
     <nav class="menu" aria-label="Главное меню">
         <a href="/lessons" {% if request.path == '/lessons' %}aria-current="page"{% endif %}>Уроки</a>
-        <a href="/lessons/1" {% if request.path in ['/', '/lessons/1'] %}aria-current="page"{% endif %}>Урок 1</a>
-        <a href="/lessons/2" {% if request.path == '/lessons/2' %}aria-current="page"{% endif %}>Урок 2</a>
-        <a href="/lessons/3" {% if request.path == '/lessons/3' %}aria-current="page"{% endif %}>Урок 3</a>
-        <a href="/lessons/4" {% if request.path == '/lessons/4' %}aria-current="page"{% endif %}>Урок 4</a>
-        <a href="/lessons/5" {% if request.path == '/lessons/5' %}aria-current="page"{% endif %}>Урок 5</a>
+        {% for n in range(1, total + 1) %}
+        <a href="/lessons/{{ n }}" {% if request.path == '/lessons/' ~ n or (n == 1 and request.path == '/') %}aria-current="page"{% endif %}>Урок {{ n }}</a>
+        {% endfor %}
         <a href="/sql" {% if request.path == '/sql' %}aria-current="page"{% endif %}>SQL</a>
     </nav>
 
     {% block content %}
-    <p class="hint">Урок {{ lesson_number }} из 5</p>
-    {% if lesson_number == 5 %}
-    <h1>Урок 5. Загрузка файлов на сервер</h1>
-    <p class="hint">Выбираешь файлы → отправляешь в Python → видишь всё загруженное под формой. Для картинок есть превью, остальные файлы можно скачать.</p>
-    {% elif lesson_number == 4 %}
-    <h1>Урок 4. Профиль и SQL-инъекция через about</h1>
-    <p class="hint">Выбираешь пользователя → меняешь описание about → видишь обновлённую карточку. В поле описания можно встроить INSERT и добавить ещё один профиль.</p>
-    {% elif lesson_number == 3 %}
-    <h1>Урок 3. SQL-инъекция с INSERT</h1>
-    <p class="hint">В поле поиска можно дописать SQL-команду INSERT и добавить пользователя. Это пример того, как введённый текст меняет смысл команды.</p>
-    {% elif lesson_number == 2 %}
-    <h1>Урок 2. Поиск пользователей</h1>
-    <p class="hint">Вводишь часть логина → видишь SQL-запрос → получаешь имя и описание найденного пользователя.</p>
-    <p class="hint">LIKE ищет похожий текст. Запись '%art%' означает: «логин содержит art». Поле about — описание пользователя.</p>
-    {% else %}
-    <h1>Урок 1. Как работает вход в профиль</h1>
-    <p class="hint">Вводишь данные → Python ищет пользователя в базе → видишь имя, логин и описание.</p>
-    {% endif %}
+    <p class="hint">Урок {{ lesson_number }} из {{ total }}</p>
+    <h1>{{ title }}</h1>
+    <p class="hint">{{ hint }}</p>
 
     <main class="columns">
         <section id="lesson-app"></section>
         {% include "editor.html" %}
     </main>
     <div class="lesson-navigation">
-        <a class="refresh" href="/lessons">Все 5 уроков</a>
+        <a class="refresh" href="/lessons">Все {{ total }} уроков</a>
         {% if lesson_number > 1 %}
         <a class="refresh" href="/lessons/{{ lesson_number - 1 }}">← Урок {{ lesson_number - 1 }}</a>
         {% endif %}
-        {% if lesson_number < 5 %}
+        {% if lesson_number < total %}
         <a class="refresh" href="/lessons/{{ lesson_number + 1 }}">Урок {{ lesson_number + 1 }} →</a>
         {% endif %}
     </div>
