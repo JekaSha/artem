@@ -145,6 +145,10 @@
         .editor-status { padding: 12px; min-height: 44px; white-space: pre-wrap; overflow-wrap: anywhere; color: #1f6547; background: #eef8f2; font: 14px/1.6 monospace; }
         .editor-status.has-error { background: #fff0ef; color: #a62b2b; }
         .syntax-error-line { background: #743737; }
+        .uploaded-files { display: grid; gap: 16px; margin-top: 20px; }
+        .uploaded-file { min-width: 0; padding: 16px; border: 1px solid #dce2e8; border-radius: 8px; }
+        .uploaded-file h4 { margin: 12px 0 0; overflow-wrap: anywhere; }
+        .uploaded-file img { display: block; max-width: 100%; max-height: 240px; margin: auto; object-fit: contain; }
         @media (max-width: 800px) {
             body { padding: 16px; }
             .columns { grid-template-columns: 1fr; }
@@ -154,17 +158,21 @@
 </head>
 <body>
     <nav class="menu" aria-label="Главное меню">
-        <a href="/lessons" {% if request.path in ['/lessons', '/lessons/5'] %}aria-current="page"{% endif %}>Уроки</a>
+        <a href="/lessons" {% if request.path == '/lessons' %}aria-current="page"{% endif %}>Уроки</a>
         <a href="/lessons/1" {% if request.path in ['/', '/lessons/1'] %}aria-current="page"{% endif %}>Урок 1</a>
         <a href="/lessons/2" {% if request.path == '/lessons/2' %}aria-current="page"{% endif %}>Урок 2</a>
         <a href="/lessons/3" {% if request.path == '/lessons/3' %}aria-current="page"{% endif %}>Урок 3</a>
         <a href="/lessons/4" {% if request.path == '/lessons/4' %}aria-current="page"{% endif %}>Урок 4</a>
+        <a href="/lessons/5" {% if request.path == '/lessons/5' %}aria-current="page"{% endif %}>Урок 5</a>
         <a href="/sql" {% if request.path == '/sql' %}aria-current="page"{% endif %}>SQL</a>
     </nav>
 
     {% block content %}
     <p class="hint">Урок {{ lesson_number }} из 5</p>
-    {% if lesson_number == 4 %}
+    {% if lesson_number == 5 %}
+    <h1>Урок 5. Загрузка файлов на сервер</h1>
+    <p class="hint">Выбираешь файлы → отправляешь в Python → видишь всё загруженное под формой. Для картинок есть превью, остальные файлы можно скачать.</p>
+    {% elif lesson_number == 4 %}
     <h1>Урок 4. Профиль и SQL-инъекция через about</h1>
     <p class="hint">Выбираешь пользователя → меняешь описание about → видишь обновлённую карточку. В поле описания можно встроить INSERT и добавить ещё один профиль.</p>
     {% elif lesson_number == 3 %}
@@ -188,7 +196,9 @@
         {% if lesson_number > 1 %}
         <a class="refresh" href="/lessons/{{ lesson_number - 1 }}">← Урок {{ lesson_number - 1 }}</a>
         {% endif %}
+        {% if lesson_number < 5 %}
         <a class="refresh" href="/lessons/{{ lesson_number + 1 }}">Урок {{ lesson_number + 1 }} →</a>
+        {% endif %}
     </div>
     {% endblock %}
 

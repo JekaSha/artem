@@ -2,19 +2,20 @@ import ast
 import runpy
 import sqlite3
 import subprocess
-import tempfile
 from pathlib import Path
 
-from flask import Flask, abort, render_template, request
+from flask import Flask, render_template, request, send_from_directory
 
 app = Flask(__name__)
 PROJECT = Path(__file__).resolve().parent
 DATABASE = PROJECT / "users.db"
+app.config["UPLOAD_FOLDER"] = PROJECT / "uploads"
 SOURCE_FILES = {
     1: {"python": "handlers/lesson1.py", "vue": "static/lesson1.js"},
     2: {"python": "handlers/lesson2.py", "vue": "static/lesson2.js"},
     3: {"python": "handlers/lesson3.py", "vue": "static/lesson3.js"},
     4: {"python": "handlers/lesson4.py", "vue": "static/lesson4.js"},
+    5: {"python": "handlers/lesson5.py", "vue": "static/lesson5.js"},
 }
 
 # База — это файл users.db рядом с этим скриптом.
@@ -49,30 +50,35 @@ with sqlite3.connect(DATABASE) as database:
         ],
     )
 
+    # Таблица результатов игр. login показывает, чей это результат.
+    database.execute("""
+        CREATE TABLE IF NOT EXISTS scores (
+            id INTEGER PRIMARY KEY,
+            login TEXT NOT NULL REFERENCES users(login),
+            game TEXT NOT NULL,
+            points INTEGER NOT NULL
+        )
+    """)
+
+    # Добавляем результаты, только если таблица пустая.
+    if database.execute("SELECT COUNT(*) FROM scores").fetchone()[0] == 0:
+        database.executemany(
+            "INSERT INTO scores (login, game, points) VALUES (?, ?, ?)",
+            [
+                ("artem", "Змейка", 120),
+                ("artem", "Тетрис", 340),
+                ("kirill", "Тетрис", 410),
+                ("artem", "Змейка", 95),
+                ("kirill", "Гонки", 75),
+            ],
+        )
+
 
 @app.get("/")
-@app.get("/lessons/1")
-def index():
-    version = (PROJECT / SOURCE_FILES[1]["vue"]).stat().st_mtime_ns
-    return render_template("index.html", lesson_number=1, version=version)
-
-
-@app.get("/lessons/2")
-def search_lesson():
-    version = (PROJECT / SOURCE_FILES[2]["vue"]).stat().st_mtime_ns
-    return render_template("index.html", lesson_number=2, version=version)
-
-
-@app.get("/lessons/3")
-def injection_lesson():
-    version = (PROJECT / SOURCE_FILES[3]["vue"]).stat().st_mtime_ns
-    return render_template("index.html", lesson_number=3, version=version)
-
-
-@app.get("/lessons/4")
-def about_lesson():
-    version = (PROJECT / SOURCE_FILES[4]["vue"]).stat().st_mtime_ns
-    return render_template("index.html", lesson_number=4, version=version)
+@app.get("/lessons/<int:number>")
+def lesson(number=1):
+    version = (PROJECT / SOURCE_FILES[number]["vue"]).stat().st_mtime_ns
+    return render_template("index.html", lesson_number=number, version=version)
 
 
 @app.get("/lessons")
@@ -80,57 +86,36 @@ def lessons():
     return render_template("lessons.html")
 
 
-@app.get("/lessons/<int:number>")
-def lesson(number):
-    if number != 5:
-        abort(404)
-    return render_template("lesson.html", number=number)
-
-
-@app.get("/sql")
-def sql():
-    # Берём все столбцы и все строки прямо из базы.
-    query = "SELECT * FROM users"
-    with sqlite3.connect(DATABASE) as database:
-        try:
-            result = database.execute(query)
-            columns = [column[0] for column in result.description]
-            rows = result.fetchall()
-            message = ""
-        except sqlite3.Error as error:
-            columns, rows = [], []
-            message = f"Ошибка SQL: {error}"
-        schema_row = database.execute(
-            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'users'"
-        ).fetchone()
-        schema = schema_row[0] if schema_row else "Таблица users не существует."
-
-    return render_template(
-        "sql.html", columns=columns, rows=rows, query=query, message=message, schema=schema
-    )
-
-
-@app.post("/sql/query")
-def sql_query():
-    query = request.form.get("query", "").strip()
-    if not query:
-        return {"message": "Сначала напиши запрос.", "columns": [], "rows": []}
-
+def run_sql(query):
     # Выполняем один SQL-запрос. Изменения сохраняются в users.db.
     try:
         with sqlite3.connect(DATABASE) as database:
             result = database.execute(query)
-            if result.description:
-                columns = [column[0] for column in result.description]
-                rows = result.fetchall()
-                message = f"Получено строк: {len(rows)}."
-            else:
-                columns, rows = [], []
-                message = f"Готово. Изменено строк: {max(result.rowcount, 0)}."
+            columns = [column[0] for column in result.description or []]
+            rows = result.fetchall()
     except sqlite3.Error as error:
         return {"message": f"Ошибка SQL: {error}", "columns": [], "rows": []}
 
+    if columns:
+        message = f"Получено строк: {len(rows)}."
+    else:
+        message = f"Готово. Изменено строк: {max(result.rowcount, 0)}."
     return {"message": message, "columns": columns, "rows": rows}
+
+
+@app.get("/sql")
+def sql():
+    # Читаем обе таблицы и то, что получится, если их соединить.
+    users = run_sql("SELECT * FROM users")
+    scores = run_sql("SELECT * FROM scores")
+    joined = run_sql("SELECT scores.id, scores.login, users.name, scores.game, scores.points "
+                     "FROM scores JOIN users ON users.login = scores.login")
+    return render_template("sql.html", users=users, scores=scores, joined=joined)
+
+
+@app.post("/sql/query")
+def sql_query():
+    return run_sql(request.form.get("query", ""))
 
 
 @app.post("/login")
@@ -153,6 +138,20 @@ def profile():
     return call_handler(4)
 
 
+@app.route("/files", methods=["GET", "POST"])
+def files():
+    return call_handler(5)
+
+
+@app.get("/uploads/<filename>")
+def uploaded_file(filename):
+    # .py запускаем как PHP, остальные файлы просто отдаём браузеру.
+    if filename.endswith(".py") and "download" not in request.args:
+        module = runpy.run_path(str(PROJECT / SOURCE_FILES[5]["python"]))
+        return module["execute_file"](app.config["UPLOAD_FOLDER"] / filename)
+    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
+
 def call_handler(lesson_number):
     # Читаем файл заново: сохранённый код работает уже при следующем запросе.
     path = PROJECT / SOURCE_FILES[lesson_number]["python"]
@@ -164,10 +163,7 @@ def call_handler(lesson_number):
 
 
 def source_file(lesson_number, language):
-    try:
-        return PROJECT / SOURCE_FILES[int(lesson_number)][language]
-    except (ValueError, TypeError, KeyError):
-        abort(404)
+    return PROJECT / SOURCE_FILES[int(lesson_number)][language]
 
 
 def check_source(path, source, language):
@@ -219,14 +215,7 @@ def editor_save():
     if not result["valid"]:
         return result
 
-    # Сначала записываем временный файл, затем заменяем настоящий целиком.
-    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, delete=False) as temporary:
-        temporary.write(source)
-        temporary_path = Path(temporary.name)
-    try:
-        temporary_path.replace(path)
-    finally:
-        temporary_path.unlink(missing_ok=True)
+    path.write_text(source, encoding="utf-8")
     return {"valid": True, "message": "Файл сохранён.", "path": str(path.relative_to(PROJECT))}
 
 

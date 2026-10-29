@@ -2,14 +2,73 @@
 
 {% block title %}SQL — запросы к базе данных{% endblock %}
 
+{% macro show_table(data) %}
+<div class="table-scroll">
+    <table>
+        <tr>{% for column in data.columns %}<th>{{ column }}</th>{% endfor %}</tr>
+        {% for row in data.rows %}
+        <tr>{% for value in row %}<td>{{ value }}</td>{% endfor %}</tr>
+        {% endfor %}
+    </table>
+</div>
+{% endmacro %}
+
 {% block content %}
 <h1>SQL — говорим с базой данных</h1>
-<p class="hint">База — как тетрадь с таблицами. SQL — команды, с помощью которых мы читаем и меняем записи.</p>
+<p class="hint">База — как тетрадь с таблицами. SQL — команды, с помощью которых мы читаем и меняем записи. В нашей базе две таблицы: users — пользователи и scores — их очки в играх.</p>
 
-<main>
+<main style="display: grid; gap: 24px;">
+    <section>
+        <h2>Таблица users — пользователи</h2>
+        <p class="hint">Одна строка — один пользователь.</p>
+        <table>
+            <tr><th>Столбец</th><th>Тип</th><th>Что хранит</th></tr>
+            <tr><td>login</td><td>TEXT PRIMARY KEY</td><td>Логин. PRIMARY KEY значит «не повторяется»: двух artem быть не может.</td></tr>
+            <tr><td>password</td><td>TEXT NOT NULL</td><td>Пароль. NOT NULL значит «нельзя оставить пустым».</td></tr>
+            <tr><td>name</td><td>TEXT NOT NULL</td><td>Имя, которое видно в профиле.</td></tr>
+            <tr><td>about</td><td>TEXT NOT NULL DEFAULT ''</td><td>Описание. DEFAULT '' значит «если не написали — пустая строка».</td></tr>
+        </table>
+        <h3>Что лежит в users сейчас</h3>
+        {{ show_table(users) }}
+    </section>
+
+    <section>
+        <h2>Таблица scores — очки в играх</h2>
+        <p class="hint">Одна строка — одна сыгранная игра.</p>
+        <table>
+            <tr><th>Столбец</th><th>Тип</th><th>Что хранит</th></tr>
+            <tr><td>id</td><td>INTEGER PRIMARY KEY</td><td>Номер записи. База сама выдаёт следующий номер.</td></tr>
+            <tr><td>login</td><td>TEXT NOT NULL REFERENCES users(login)</td><td>Чья это игра. Тут пишем login из таблицы users.</td></tr>
+            <tr><td>game</td><td>TEXT NOT NULL</td><td>Название игры.</td></tr>
+            <tr><td>points</td><td>INTEGER NOT NULL</td><td>Сколько очков набрано. INTEGER — целое число.</td></tr>
+        </table>
+        <h3>Что лежит в scores сейчас</h3>
+        {{ show_table(scores) }}
+    </section>
+
+    <section>
+        <h2>Как таблицы соединяются</h2>
+<pre>
+  users                    scores
+  ─────────                ─────────
+  login  ───── один ко ──→ login
+  password       многим    id
+  name                     game
+  about                    points
+</pre>
+        <p class="hint">В users логин artem есть <b>один раз</b>. В scores логин artem встречается <b>много раз</b> — у Артёма много игр.</p>
+        <p class="hint">В scores мы не пишем имя «Артём», только логин artem. Чтобы увидеть имя рядом с очками, соединяем таблицы через JOIN:</p>
+        <pre><code class="language-sql">SELECT scores.id, scores.login, users.name, scores.game, scores.points
+FROM scores
+JOIN users ON users.login = scores.login</code></pre>
+        <p class="hint"><b>ON users.login = scores.login</b> значит: к каждой строке из scores приклей строку из users с таким же логином. <b>scores.login</b> значит «столбец login из таблицы scores».</p>
+        <h3>Результат JOIN</h3>
+        {{ show_table(joined) }}
+    </section>
+
     <section id="sql-app">
         <h2>Попробуй свой запрос</h2>
-        <p class="hint">Пиши один запрос за раз. Добавление и удаление сразу сохраняются в настоящей базе users.db.</p>
+        <p class="hint">Пиши один запрос за раз. Добавление и удаление сразу сохраняются в настоящей базе users.db. Таблицы выше обновятся, когда ты обновишь страницу.</p>
         <form @submit.prevent="runQuery">
             <label for="query">SQL-запрос</label>
             <textarea id="query" name="query" v-model="query" spellcheck="false" required></textarea>
@@ -17,31 +76,22 @@
                 <button type="submit" :disabled="running">
                     <span v-text="running ? 'Выполняем…' : 'Выполнить'"></span>
                 </button>
-                <button type="button" :disabled="running" @click="showUsers">Показать таблицу users</button>
+                <button type="button" :disabled="running" @click="showTable('users')">Показать users</button>
+                <button type="button" :disabled="running" @click="showTable('scores')">Показать scores</button>
             </div>
         </form>
 
         <p class="result" aria-live="polite" v-text="message"></p>
-        <h3>Результат запроса</h3>
         <div class="table-scroll" v-if="columns.length">
             <table>
-                <caption>Строк в результате: <span v-text="rows.length"></span></caption>
-                <thead>
-                    <tr><th v-for="(column, index) in columns" :key="index" scope="col" v-text="column"></th></tr>
-                </thead>
-                <tbody>
-                    <tr v-for="(row, rowIndex) in rows" :key="rowIndex">
-                        <td v-for="(value, index) in row" :key="index" v-text="value === null ? 'NULL' : value"></td>
-                    </tr>
-                    <tr v-if="rows.length === 0"><td :colspan="columns.length">Ничего не найдено.</td></tr>
-                </tbody>
+                <tr><th v-for="column in columns" v-text="column"></th></tr>
+                <tr v-for="row in rows"><td v-for="value in row" v-text="value"></td></tr>
             </table>
         </div>
-        <p class="hint" v-else>У этого запроса нет таблицы с результатом.</p>
     </section>
 
     <section class="help">
-        <h2>Шпаргалка: четыре команды</h2>
+        <h2>Шпаргалка</h2>
         <p class="hint">Скопируй пример в поле сверху и нажми «Выполнить».</p>
         <div class="help-grid">
             <article>
@@ -66,12 +116,37 @@ WHERE login = 'masha';</code></pre>
                 <p class="hint">«Сколько всего пользователей?» COUNT(*) считает строки, а AS total даёт имя столбцу с ответом.</p>
                 <pre><code class="language-sql">SELECT COUNT(*) AS total FROM users;</code></pre>
             </article>
+            <article>
+                <h3>Добавить очки</h3>
+                <p class="hint">«Кирилл набрал 150 очков в Змейке». id не пишем — база выдаст номер сама.</p>
+                <pre><code class="language-sql">INSERT INTO scores (login, game, points)
+VALUES ('kirill', 'Змейка', 150);</code></pre>
+            </article>
+            <article>
+                <h3>Соединять — JOIN</h3>
+                <p class="hint">«Покажи имя, игру и очки». Имя берём из users, игру и очки — из scores.</p>
+                <pre><code class="language-sql">SELECT users.name, scores.game, scores.points
+FROM scores
+JOIN users ON users.login = scores.login;</code></pre>
+            </article>
+            <article>
+                <h3>Сумма очков — GROUP BY</h3>
+                <p class="hint">GROUP BY собирает игры одного игрока вместе, SUM складывает его очки.</p>
+                <pre><code class="language-sql">SELECT users.name, SUM(scores.points) AS total
+FROM scores
+JOIN users ON users.login = scores.login
+GROUP BY users.name;</code></pre>
+            </article>
+            <article>
+                <h3>Очки одного игрока — WHERE</h3>
+                <p class="hint">«Покажи все игры Артёма».</p>
+                <pre><code class="language-sql">SELECT users.name, scores.game, scores.points
+FROM scores
+JOIN users ON users.login = scores.login
+WHERE users.login = 'artem';</code></pre>
+            </article>
         </div>
-        <p class="hint">Текст пишем в одинарных кавычках: 'Маша'. Команду можно закончить точкой с запятой: ;</p>
-        <details>
-            <summary>Структура таблицы users в базе</summary>
-            <pre><code class="language-sql">{{ schema }}</code></pre>
-        </details>
+        <p class="hint">Текст пишем в одинарных кавычках: 'Маша'. Числа — без кавычек: 150.</p>
     </section>
 </main>
 {% endblock %}
@@ -84,38 +159,23 @@ WHERE login = 'masha';</code></pre>
 
     Vue.createApp({
         data() {
-            return {
-                query: {{ query|tojson }},
-                columns: {{ columns|tojson }},
-                rows: {{ rows|tojson }},
-                message: {{ message|tojson }},
-                running: false
-            };
+            return { query: 'SELECT * FROM scores', columns: [], rows: [], message: '', running: false };
         },
         methods: {
             async runQuery() {
                 this.running = true;
-                this.message = '';
-                try {
-                    const response = await fetch('/sql/query', {
-                        method: 'POST',
-                        body: new URLSearchParams({ query: this.query })
-                    });
-                    if (!response.ok) throw new Error('Ошибка сервера');
-                    const result = await response.json();
-                    this.columns = result.columns;
-                    this.rows = result.rows;
-                    this.message = result.message;
-                } catch {
-                    this.columns = [];
-                    this.rows = [];
-                    this.message = 'Нет ответа от Python. Проверь, запущена ли программа.';
-                } finally {
-                    this.running = false;
-                }
+                const response = await fetch('/sql/query', {
+                    method: 'POST',
+                    body: new URLSearchParams({ query: this.query })
+                });
+                const result = await response.json();
+                this.columns = result.columns;
+                this.rows = result.rows;
+                this.message = result.message;
+                this.running = false;
             },
-            showUsers() {
-                this.query = 'SELECT * FROM users';
+            showTable(name) {
+                this.query = 'SELECT * FROM ' + name;
                 this.runQuery();
             }
         }

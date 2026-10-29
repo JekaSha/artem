@@ -3,7 +3,7 @@
 
 {% block content %}
 <h1>Уроки Python и SQL</h1>
-<p class="hint">Всего будет 5 уроков. Начни с первого: форма отправляет данные в Python, а Python ищет пользователя в базе.</p>
+<p class="hint">Пять уроков с работающими формами и редактором кода. Начни с первого: форма отправляет данные в Python, а Python ищет пользователя в базе.</p>
 <main class="lesson-list">
     <a class="lesson-card" href="/lessons/1">
         <h2>Урок 1. Вход в профиль</h2>
@@ -25,13 +25,11 @@
         <p class="hint">Карточка профиля, обновление описания и INSERT через поле about.</p>
         <p>Открыть урок →</p>
     </a>
-    {% for number in range(5, 6) %}
-    <a class="lesson-card" href="/lessons/{{ number }}">
-        <h2>Урок {{ number }}</h2>
-        <p class="hint">Содержание пока не добавлено.</p>
-        <p>Открыть страницу →</p>
+    <a class="lesson-card" href="/lessons/5">
+        <h2>Урок 5. Загрузка файлов</h2>
+        <p class="hint">Картинки и любые другие файлы: загрузка, превью и список под формой.</p>
+        <p>Открыть урок →</p>
     </a>
-    {% endfor %}
 </main>
 {% endblock %}
 {% block scripts %}{% endblock %}
